@@ -1,7 +1,10 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <cstdio>
 using namespace std;
+
+//==============================Input Validator Class===============================
 
 class InputValidator {
 public:
@@ -25,141 +28,436 @@ public:
     }
 };
 
-class BankAccount{
+//======================CUSTOMER CLASS============================
+
+class Customer{
     private:
-      int accId;
-      int pin;
-      double amount;
-      void saveTransaction(string type,double amt);
-    public:
-      BankAccount(int acc,int p,double a):accId(acc),pin(p),amount(a){}
-      bool login();
-      void withdraw();
-      void deposit();
-      void checkBalance();
-      void transactionHistory();
+        int customerId;
+        string name;
+        int accountNumber;
+        int pin;
+    public:   
+        Customer(){}
+        Customer(int id,string nm,int acc,int p):
+        customerId(id),name(nm),accountNumber(acc),pin(p){}
+
+        bool customerExist(int acc);
+        void saveCustomer();
+        static bool login(int acc,int pin);
 };
 
-void BankAccount::saveTransaction(string type,double amt){
+bool Customer::customerExist(int CustID){
+    ifstream fin("customer.txt");
 
-    ofstream fout("transaction.txt",ios::app);
-
-    if(fout){
-
-        fout<<fixed<<setprecision(2);
-
-        fout<<"ACCOUNT NUMBER: "<<accId<<endl;
-        fout<<"TRANSACTION: "<<type<<endl;
-        fout<<"AMOUNT: "<<amt<<endl;
-        fout<<"CURRENT BALANCE: "<<amount<<endl;
-        fout<<"-----------------------------------"<<endl;
+    if(!fin.is_open()){
+        cout<<"ERROR OPENING CUSTOMER FILE\n";
+        return false;
     }
 
-    fout.close();
+    int cId,acc,p;
+    string name;
+
+    while(fin>>cId>>name>>acc>>p){
+        if(CustID==cId){
+            fin.close();
+            return true;
+        }
+    }
+    
+    fin.close();
+    return false;
 }
 
-void BankAccount::transactionHistory(){
+void Customer::saveCustomer(){
+    if(Customer::customerExist(customerId)){
+        cout<<"USER ALREADY EXIST...\n";
+        return;
+    }
 
-    ifstream fin("transaction.txt");
+    fstream file("customer.txt",ios::app);
 
-    string line;
+    if(!file.is_open()){
+        cout<<"ERROR OPENING IN FILE...!!!\n";
+        return;    
+    }
+    file<<customerId<<" "<<name<<" "<<accountNumber<<" "<<pin<<"\n";
 
-    if(fin){
-        while(getline(fin,line)){
-            cout<<line<<endl;
+    file.close();
+}
+
+bool Customer::login(int acc,int pin){
+    ifstream file("customer.txt");
+
+    int id,account,storedPin;
+    string name;
+
+    while(file>>id>>name>>account>>storedPin){
+        if(account==acc && storedPin==pin){
+            return true;
         }
     }
 
-    else{
-        cout<<"NO TRANSACTION HISTORY FOUND"<<endl;
+    return false;
+}
+
+//===============================TRANSACTION CLASS======================================
+
+class Transaction{
+    public:
+       static void saveTransaction(int acc,string type,double amount);
+       static void showAccountHistory(int acc);
+};
+
+void Transaction::saveTransaction(int acc,string type,double amount){
+    ofstream file("transaction.txt",ios::app);
+
+    if(!file.is_open()){
+        cout<<"ERROR OPENING TRANSACTION FILE\n";
+        return;
+    }
+
+    file << acc << " "<< type << " "<< amount << "\n";
+
+    file.close();
+}
+
+//-----------------------------------Account History-----------------------------------
+
+void Transaction::showAccountHistory(int acc){
+    ifstream file("transaction.txt");
+
+    if(!file.is_open()){
+        cout<<"ERROR OPENING TRANSACTION FILE\n";
+        return;
+    }
+
+    int account;
+    string type;
+    double amount;
+
+    bool found = false;
+
+    while(file >> account >> type >> amount){
+
+        if(account == acc){
+            cout << left
+                 << setw(20) << type
+                 << amount << endl;
+
+            found = true;
+        }
+    }
+
+    if(!found){
+        cout<<"NO TRANSACTIONS FOUND\n";
+    }
+
+    file.close();
+}
+
+//==============================ACCOUNT CLASS==================================
+
+class Account{
+    private:
+        int accountNumber;
+        double balance;
+    public:    
+        Account(){}
+        Account(int acc,double bal):accountNumber(acc),balance(bal){}
+
+        static bool accountExist(int acc);
+        void saveAccount();
+        static double getBalance(int acc);
+        static void deposit(int acc,double amount);
+        static void withdraw(int acc,double amount);
+        static void transfer(int senderAcc,int receiverAcc,double amount);
+        
+};
+
+//---------------------checking for duplicate account entry--------------------------
+
+bool Account::accountExist(int acc){
+    ifstream fin("account.txt");
+    if(!fin.is_open()){
+        cout<<"ERROR OPENING ACCOUNTS FILE...!!!!\n";
+        return false;
+    }
+
+    int account;
+    double bal;
+
+    while(fin>>account>>bal){
+        if(account==acc){
+            fin.close();
+            return true;
+        }
+    }
+    fin.close();
+    return false;
+}
+
+void Account::saveAccount(){
+    if(Account::accountExist(accountNumber)){
+        cout<<"Account already EXISTS...\n";
+        return;
+    }
+
+    ofstream file("account.txt",ios::app);
+
+    if(!file.is_open()){
+        cout<<"ERROR OPENING ACCOUNTS FILE...!!!\n";
+        return;
+    }
+
+    file<<accountNumber<<" "<<balance<<"\n";
+    file.close();
+}
+
+//----------------------------------Check or Get Balance--------------------------------
+
+double Account::getBalance(int acc){
+    ifstream file("account.txt");
+
+    if(!file.is_open()){
+        cout<<"ERROR OPENING ACCOUNTS FILE...!!!\n";
+        return -1;
+    }
+
+    int account;
+    double bal;
+
+    while(file>>account>>bal){
+        if(account==acc){
+            file.close();
+            return bal;
+        }
+    }
+    file.close();
+    cout<<"ACCOUNT DOESN'T EXIST HERE.............\n";
+    return -1;
+}
+
+//---------------------------------------Deposit-------------------------------------
+
+void Account::deposit(int acc,double amount){
+    ifstream fin("account.txt");
+    if(!fin.is_open()){
+        cout<<"ERROR OPENING IN ACCOUNT FILE.......";
+        return;
+    }
+
+    ofstream fout("temp.txt");
+    
+    int account;
+    double balance;
+    bool found=false;
+
+    while(fin>>account>>balance){
+        if(account==acc){
+            found=true;
+            balance+=amount;
+            Transaction::saveTransaction(acc,"Deposit",amount);
+        }
+
+        fout<<account<<" "<<balance<<"\n";
+    }
+    fin.close();
+    fout.close();
+
+    if(!found){
+        cout<<"ACCOUNT NOT FOUND.................\n";
+    }
+
+    remove("account.txt");
+    rename("temp.txt","account.txt");
+}
+
+//------------------------------------Withdraw-----------------------------------------
+
+void Account::withdraw(int acc,double amount){
+    ifstream fin("account.txt");
+    if(!fin.is_open()){
+        cout<<"ERROR OPENING IN ACCOUNT FILE.......";
+        return;
+    }
+
+    ofstream fout("temp.txt");
+    
+    int account;
+    double balance;
+    bool found= false;
+
+    while(fin>>account>>balance){
+        if(account==acc){
+            found=true;
+            if(balance < amount){
+                cout<<"INSUFFICIENT BALANCE\n";
+            }
+            else{
+                balance -= amount;
+                Transaction::saveTransaction(acc,"Withdraw",amount);
+            }
+        }
+
+        fout<<account<<" "<<balance<<"\n";
+    }
+
+    if(!found){
+        cout<<"ACCOUNT NOT FOUND.............\n";
     }
 
     fin.close();
+    fout.close();
+
+    remove("account.txt");
+    rename("temp.txt","account.txt");
 }
 
-bool BankAccount::login(){
-    int enteredPin=InputValidator::getValidInput<int>("ENTER THE PIN:");
+//-----------------------------Fund Transfer---------------------------------
 
-    if(enteredPin==pin){
-        cout<<"ACCESS GRANTED"<<endl;
-        return true;
+void Account::transfer(int senderAcc,int receiverAcc,double amount){
+    ifstream fin("account.txt");
+    if(!fin.is_open()){
+        cout<<"ERROR OPENING IN ACCOUNT FILE.......";
+        return;
     }
-    else{
-        cout<<"INCORRECT PIN...!!!";
-        return false;
+
+    double senderBalance = getBalance(senderAcc);    //-----to check if sender's record exist in my data----
+    double receiverBalance = getBalance(receiverAcc);    //----similarly, to check if reciever's record exist in my data---------
+
+    if(senderBalance == -1){
+        cout<<"SENDER ACCOUNT NOT FOUND\n";
+        return;
     }
-}
 
-void BankAccount::withdraw(){
-    double enteredAmount=InputValidator::getValidInput<double>("ENTER AMOUNT TO WITHDRAW: ");
-
-    if(amount>=enteredAmount){
-
-        cout<<"WITHDRAWAL IS BEING INITIATED"<<endl;
-
-        amount=amount-enteredAmount;
-
-        saveTransaction("WITHDRAW",enteredAmount);
-
-        cout<<"CURRENT BALANCE: "<<amount<<endl;
-        }
-    else if(enteredAmount>amount){
-       cout<<"INSUFFICIENT BALANCE"<<endl;
+    if(receiverBalance == -1){
+        cout<<"RECEIVER ACCOUNT NOT FOUND\n";
+        return;
     }
-}
 
-void BankAccount::deposit(){
-    double enteredAmount=InputValidator::getValidInput<double>("ENTER AMOUNT TO DEPOSIT: ");
+    if(senderAcc == receiverAcc){
+        cout<<"CANNOT TRANSFER TO SAME ACCOUNT\n";
+        return;
+    }
 
-    amount=amount+enteredAmount;
+    if(senderBalance < amount){
+        cout<<"INSUFFICIENT BALANCE\n";
+        return;
+    }
 
-    saveTransaction("DEPOSIT",enteredAmount);
-
-    cout<<"BALANCE UPDATED"<<endl;
-    cout<<"CURRENT BALANCE: "<<amount<<endl;
+    ofstream fout("temp.txt");
     
-}
+    int account;
+    double balance;
 
-void BankAccount::checkBalance(){
-    cout<<"YOUR CURRENT BALANCE IS: "<<amount<<endl;
-}
+    while(fin>>account>>balance){
+        if(account==senderAcc){
+            balance -= amount;
+            Transaction::saveTransaction(senderAcc,"TransferSent",amount);
+        }
 
-//===================USER INTERACTION SPACE=====================
+        else if(account==receiverAcc){
+            balance+=amount;
+            Transaction::saveTransaction(receiverAcc,"TransferReceived",amount);
+        }
 
-void bankingSystem(BankAccount &obj){
-    if(obj.login()){
-        int choice;
-
-        do{
-            cout<<"\n==============================================================\n";
-            cout<<"WHAT DO YOU WANT TO PERFORM\n1.WITHDRAW\n2.DEPOSIT\n3.CHECK BALANCE\n4.TRANSACTION HISTORY\n5.EXIT\nENTER YOUR CHOICE: ";
-            cout<<"\n==============================================================\n";
-
-            choice = InputValidator::getValidInput<int>("ENTER YOUR CHOICE: ");
-
-          switch(choice){
-            case 1:obj.withdraw();
-                break;
-            case 2:obj.deposit();
-                break;
-            case 3:obj.checkBalance();
-                break;
-            case 4:obj.transactionHistory();
-                break;
-            case 5:cout<<"EXITING...";
-                break;
-            default: cout<<"INVALID CHOICE...!!!";
-          }
-        }while(choice!=5);
+        fout<<account<<" "<<balance<<"\n";
     }
+
+    fin.close();
+    fout.close();
+
+    remove("account.txt");
+    rename("temp.txt","account.txt");
 }
+
 
 int main(){
-    int Pin=InputValidator::getValidInput<int>("ENTER PIN: ");
-    float balance=InputValidator::getValidInput<float>("ENTER BALANCE: ");
-    int id=InputValidator::getValidInput<int>("ENTER YOUR BankAccount ACCOUNT NUMBER: ");
+    int choice;
+    do{
+        cout<<"\n====================BANKING SYSTEM==============================\n";
+        cout<<"1. Create Account\n2. Login\n3. Exit\n";
 
-    BankAccount u1(id,Pin,balance);
-    bankingSystem(u1);
+        choice=InputValidator::getValidInput<int>("Enter Your Choice: ");
+        
+        switch(choice){
+            case 1:{  
+                string name;
+                cout<<"Enter Customer Name: ";
+                cin>>name;
+
+                int customerId=InputValidator::getValidInput<int>("Enter Customer ID: ");
+                int accNum=InputValidator::getValidInput<int>("Enter Account Number: ");
+                int pin=InputValidator::getValidInput<int>("Enter PIN: ");
+                double balance=InputValidator::getValidInput<double>("Enter Opening Balance: ");
+
+                Customer c(customerId,name,accNum,pin);
+                c.saveCustomer();
+
+                Account a(accNum,balance);
+                a.saveAccount();
+
+                break;
+
+            }
+            case 2:{
+                int acc=InputValidator::getValidInput<int>("Enter Account Number: ");
+                int pin=InputValidator::getValidInput<int>("Enter PIN:");
+
+                if(Customer::login(acc,pin)){
+                    int userChoice;
+
+                    do{
+                        cout<<"===============BANKING MENU=====================\n";
+                        cout<<"1. DEPOSIT\n2. WITHDRAW\n3. TRANSFER FUND\n4. CHECK BALANCE\n5. TRANSACTION HISTORY\n6. LOGOUT\nENTER YOUR CHOICE:";
+                        cin>>userChoice;
+
+                        switch(userChoice){
+                            case 1:{
+                                double amount=InputValidator::getValidInput<double>("Enter Amount: ");
+                                Account::deposit(acc,amount);
+                                break;
+                            }
+
+                            case 2:{
+                                double amount=InputValidator::getValidInput<double>("Enter Amount: ");
+                                Account::withdraw(acc,amount);
+                                break;
+                            }
+
+                            case 3:{
+                                int rec=InputValidator::getValidInput<int>("Enter Receiver Account Number: ");
+                                double amount=InputValidator::getValidInput<double>("Enter Amount: ");
+                                Account::transfer(acc,rec,amount);
+                                break;
+                            }
+
+                            case 4:{
+                                cout<<"BALANCE: "<<Account::getBalance(acc)<<endl;
+                                break;
+                            }
+
+                            case 5:{
+                                Transaction::showAccountHistory(acc);
+                                break;
+                            }
+
+                            case 6:  cout<<"Exiting.................\n";
+                                break;
+                            
+                            default:cout<<"INVALID CHOICE.........!!!\n";
+                        }
+                    }while(userChoice!=6);
+                }
+                else{
+                    cout<<"INVALID USER...!!!\n";
+                }
+            break;
+            }
+            case 3: cout<<"EXITING............\nThank You ^_^\n";
+                    break;
+            default: cout<<"Invalid Choice\n";
+        }
+    }while(choice!=3);
     return 0;
 }
