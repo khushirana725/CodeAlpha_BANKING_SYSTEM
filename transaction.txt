@@ -1,2 +1,6 @@
 23456 Deposit 50000
 23456 Withdraw 2000
+234567 Deposit 60000
+234567 Withdraw 5500
+23145 TransferReceived 50000
+234567 TransferSent 50000

@@ -46,8 +46,10 @@ class Customer{
         static bool login(int acc,int pin);
 };
 
+//--------check the existence of customer data in my data file------------------
+
 bool Customer::customerExist(int CustID){
-    ifstream fin("customer.txt");
+    ifstream fin("customer.txt");                                 //file having customers data
 
     if(!fin.is_open()){
         cout<<"ERROR OPENING CUSTOMER FILE\n";
@@ -68,7 +70,9 @@ bool Customer::customerExist(int CustID){
     return false;
 }
 
-void Customer::saveCustomer(){
+//------------------save the customer data in my data file-----------------------
+
+void Customer::saveCustomer(){                                               //new customers entry after checking if it's not duplicate 
     if(Customer::customerExist(customerId)){
         cout<<"USER ALREADY EXIST...\n";
         return;
@@ -85,6 +89,8 @@ void Customer::saveCustomer(){
     file.close();
 }
 
+//--------------for customer login--------------------
+
 bool Customer::login(int acc,int pin){
     ifstream file("customer.txt");
 
@@ -92,7 +98,7 @@ bool Customer::login(int acc,int pin){
     string name;
 
     while(file>>id>>name>>account>>storedPin){
-        if(account==acc && storedPin==pin){
+        if(account==acc && storedPin==pin){                           //login after checking authenticity of user
             return true;
         }
     }
@@ -108,7 +114,7 @@ class Transaction{
        static void showAccountHistory(int acc);
 };
 
-void Transaction::saveTransaction(int acc,string type,double amount){
+void Transaction::saveTransaction(int acc,string type,double amount){                         //to save all transaction's in transaction file and access using acc no. for data showing purpose
     ofstream file("transaction.txt",ios::app);
 
     if(!file.is_open()){
@@ -124,7 +130,7 @@ void Transaction::saveTransaction(int acc,string type,double amount){
 //-----------------------------------Account History-----------------------------------
 
 void Transaction::showAccountHistory(int acc){
-    ifstream file("transaction.txt");
+    ifstream file("transaction.txt");                 //file storing data for customers transactions
 
     if(!file.is_open()){
         cout<<"ERROR OPENING TRANSACTION FILE\n";
@@ -141,7 +147,7 @@ void Transaction::showAccountHistory(int acc){
 
         if(account == acc){
             cout << left
-                 << setw(20) << type
+                 << setw(20) << type                         //for data formatting
                  << amount << endl;
 
             found = true;
@@ -196,7 +202,7 @@ bool Account::accountExist(int acc){
     return false;
 }
 
-void Account::saveAccount(){
+void Account::saveAccount(){                                //new account entry................
     if(Account::accountExist(accountNumber)){
         cout<<"Account already EXISTS...\n";
         return;
@@ -281,7 +287,7 @@ void Account::withdraw(int acc,double amount){
         return;
     }
 
-    ofstream fout("temp.txt");
+    ofstream fout("temp.txt");                            //temporary file for data re-writing
     
     int account;
     double balance;
@@ -324,7 +330,9 @@ void Account::transfer(int senderAcc,int receiverAcc,double amount){
 
     double senderBalance = getBalance(senderAcc);    //-----to check if sender's record exist in my data----
     double receiverBalance = getBalance(receiverAcc);    //----similarly, to check if reciever's record exist in my data---------
-
+           
+    //checking existance of both sender and receiver
+    
     if(senderBalance == -1){
         cout<<"SENDER ACCOUNT NOT FOUND\n";
         return;
@@ -345,7 +353,7 @@ void Account::transfer(int senderAcc,int receiverAcc,double amount){
         return;
     }
 
-    ofstream fout("temp.txt");
+    ofstream fout("temp.txt");//temporary file used for data re-writing
     
     int account;
     double balance;
